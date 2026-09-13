@@ -9,7 +9,10 @@ import ui
 
 WIDTH, HEIGHT = config.WIDTH, config.HEIGHT
 CELL = 20
-MOVE_INTERVAL = 0.12  # seconds between grid steps - keeps pace steady regardless of FPS
+BASE_MOVE_INTERVAL = 0.12  # seconds between grid steps at the start
+MIN_MOVE_INTERVAL = 0.06   # fastest the snake will ever move, how ever high the score
+GOLDEN_FOOD_CHANCE = 0.2
+GOLDEN_FOOD_VALUE = 3
 GAME_KEY = "snake"
 
 MENU, PLAYING, PAUSED, GAME_OVER = "MENU", "PLAYING", "PAUSED", "GAME_OVER"
@@ -22,10 +25,12 @@ LEGEND = [
 
 
 def _spawn_food():
-    return (
+    pos = (
         random.randrange(40, WIDTH - 40, CELL),
         random.randrange(40, HEIGHT - 40, CELL),
     )
+    golden = random.random() < GOLDEN_FOOD_CHANCE
+    return pos, golden
 
 
 def run(screen, clock, gesture_ctrl):
@@ -40,9 +45,10 @@ def run(screen, clock, gesture_ctrl):
         st.snake_x, st.snake_y = (WIDTH // 2) // CELL * CELL, (HEIGHT // 2) // CELL * CELL
         st.snake = [(st.snake_x, st.snake_y)]
         st.vx, st.vy = 1, 0
-        st.food = _spawn_food()
+        st.food, st.food_golden = _spawn_food()
         st.score = 0
         st.move_timer = 0.0
+        st.move_interval = BASE_MOVE_INTERVAL
 
     reset()
 
@@ -80,8 +86,8 @@ def run(screen, clock, gesture_ctrl):
                 st.vx, st.vy = 0, 1
 
             st.move_timer += dt
-            if st.move_timer >= MOVE_INTERVAL:
-                st.move_timer -= MOVE_INTERVAL
+            if st.move_timer >= st.move_interval:
+                st.move_timer -= st.move_interval
 
                 st.snake_x += st.vx * CELL
                 st.snake_y += st.vy * CELL
@@ -94,20 +100,23 @@ def run(screen, clock, gesture_ctrl):
                     state = GAME_OVER
                     ui.update_highscore(GAME_KEY, st.score)
                 elif st.snake[0] == st.food:
-                    st.food = _spawn_food()
-                    st.score += 1
+                    st.score += GOLDEN_FOOD_VALUE if st.food_golden else 1
+                    st.food, st.food_golden = _spawn_food()
+                    st.move_interval = max(MIN_MOVE_INTERVAL, BASE_MOVE_INTERVAL - st.score * 0.004)
                 else:
                     st.snake.pop()
 
             for segment in st.snake:
                 pygame.draw.rect(screen, config.ACCENT, (*segment, CELL, CELL), border_radius=4)
-            pygame.draw.rect(screen, config.DANGER, (*st.food, CELL, CELL), border_radius=4)
+            food_color = config.WARNING if st.food_golden else config.DANGER
+            pygame.draw.rect(screen, food_color, (*st.food, CELL, CELL), border_radius=4)
             ui.draw_text(screen, f"Score: {st.score}", fonts["medium"], config.WHITE, (16, 16))
 
         elif state == PAUSED:
             for segment in st.snake:
                 pygame.draw.rect(screen, config.ACCENT, (*segment, CELL, CELL), border_radius=4)
-            pygame.draw.rect(screen, config.DANGER, (*st.food, CELL, CELL), border_radius=4)
+            food_color = config.WARNING if st.food_golden else config.DANGER
+            pygame.draw.rect(screen, food_color, (*st.food, CELL, CELL), border_radius=4)
             ui.draw_center_message(screen, fonts, "PAUSED", ["Press P to resume"])
 
         elif state == GAME_OVER:

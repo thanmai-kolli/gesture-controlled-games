@@ -17,12 +17,14 @@ GROUND_Y = HEIGHT - 150
 LANES = [WIDTH // 2 - 160, WIDTH // 2, WIDTH // 2 + 160]
 JUMP_VELOCITY = -450                # px/s
 GRAVITY = 900                       # px/s^2
-OBSTACLE_SPEED = 180                # px/s
+OBSTACLE_SPEED = 180                # px/s, ramps up with score
+MAX_OBSTACLE_SPEED = 360            # px/s
 SPAWN_INTERVAL_RANGE = (0.9, 1.6)   # seconds between obstacle spawns
+OBSTACLE_KINDS = ("low", "high")    # low: jump over. high: duck under.
 
 LEGEND = [
     "Hand Left/Right: change lane",
-    "Open Palm: jump",
+    "Open Palm: jump   Fist: duck",
     "Esc: back to menu",
 ]
 
@@ -39,6 +41,7 @@ def run(screen, clock, gesture_ctrl):
         st.lane = 1
         st.player_y = float(GROUND_Y)
         st.vy = 0.0
+        st.ducking = False
         st.obstacles = []
         st.score = 0.0
         st.spawn_timer = random.uniform(*SPAWN_INTERVAL_RANGE)
@@ -74,6 +77,7 @@ def run(screen, clock, gesture_ctrl):
                 st.lane += 1
             elif gesture == "OPEN" and st.player_y == GROUND_Y:
                 st.vy = JUMP_VELOCITY
+            st.ducking = gesture == "FIST"
             st.prev_gesture = gesture
 
             st.vy += GRAVITY * dt
@@ -84,19 +88,32 @@ def run(screen, clock, gesture_ctrl):
 
             st.spawn_timer -= dt
             if st.spawn_timer <= 0:
-                st.obstacles.append([LANES[random.randint(0, len(LANES) - 1)], 0.0])
+                kind = random.choice(OBSTACLE_KINDS)
+                st.obstacles.append([LANES[random.randint(0, len(LANES) - 1)], 0.0, kind])
                 st.spawn_timer = random.uniform(*SPAWN_INTERVAL_RANGE)
 
+            obstacle_speed = min(MAX_OBSTACLE_SPEED, OBSTACLE_SPEED + st.score * 0.15)
             crashed = False
             for obs in st.obstacles:
-                obs[1] += OBSTACLE_SPEED * dt
-                pygame.draw.rect(screen, config.DANGER, (obs[0], int(obs[1]), BLOCK, BLOCK), border_radius=6)
-                if obs[0] == LANES[st.lane] and abs(obs[1] - st.player_y) < 30:
-                    crashed = True
+                obs[1] += obstacle_speed * dt
+                lane_x, y, kind = obs
+                if kind == "low":
+                    pygame.draw.rect(screen, config.DANGER, (lane_x, int(y), BLOCK, BLOCK), border_radius=6)
+                else:
+                    pygame.draw.rect(screen, config.WARNING, (lane_x, int(y) - BLOCK, BLOCK, BLOCK // 2),
+                                      border_radius=6)
+
+                if lane_x == LANES[st.lane] and abs(y - GROUND_Y) < 30:
+                    if kind == "low" and st.player_y >= GROUND_Y - 20:
+                        crashed = True
+                    elif kind == "high" and not st.ducking:
+                        crashed = True
             st.obstacles[:] = [o for o in st.obstacles if o[1] < HEIGHT + BLOCK]
 
             st.score += dt * 30
-            pygame.draw.rect(screen, config.ACCENT, (LANES[st.lane], int(st.player_y), BLOCK, BLOCK), border_radius=6)
+            player_rect = (pygame.Rect(LANES[st.lane], int(st.player_y) + BLOCK // 3, BLOCK, BLOCK - BLOCK // 3)
+                           if st.ducking else pygame.Rect(LANES[st.lane], int(st.player_y), BLOCK, BLOCK))
+            pygame.draw.rect(screen, config.ACCENT, player_rect, border_radius=6)
             ui.draw_text(screen, f"Score: {int(st.score)}", fonts["medium"], config.WHITE, (16, 16))
 
             if crashed:

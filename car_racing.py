@@ -1,4 +1,5 @@
 """Gesture-controlled car racing: steer with hand position, open palm to accelerate."""
+import random
 from types import SimpleNamespace
 
 import pygame
@@ -19,11 +20,19 @@ BASE_SPEED = 120      # px/s
 MAX_SPEED = 300       # px/s
 ACCELERATION = 180    # px/s^2
 
+TRAFFIC_W, TRAFFIC_H = 50, 80
+TRAFFIC_SPAWN_RANGE = (0.5, 1.1)  # seconds between oncoming cars
+
 LEGEND = [
     "Hand Left/Right: steer",
     "Open Palm: accelerate",
     "Esc: back to menu",
 ]
+
+
+def _spawn_traffic():
+    x = random.randint(ROAD_RECT.left + 4, ROAD_RECT.right - TRAFFIC_W - 4)
+    return [float(x), -float(TRAFFIC_H)]
 
 
 def run(screen, clock, gesture_ctrl):
@@ -38,6 +47,8 @@ def run(screen, clock, gesture_ctrl):
         st.car_x = float(WIDTH // 2 - CAR_W // 2)
         st.speed = float(BASE_SPEED)
         st.score = 0.0
+        st.traffic = []
+        st.spawn_timer = random.uniform(*TRAFFIC_SPAWN_RANGE)
 
     reset()
 
@@ -74,9 +85,23 @@ def run(screen, clock, gesture_ctrl):
                 lane_x = ROAD_RECT.left + ROAD_RECT.width * third // 3
                 pygame.draw.line(screen, (90, 90, 90), (lane_x, 0), (lane_x, HEIGHT), 2)
 
-            car_rect = pygame.Rect(int(st.car_x), CAR_Y, CAR_W, CAR_H)
+            st.spawn_timer -= dt
+            if st.spawn_timer <= 0:
+                st.traffic.append(_spawn_traffic())
+                st.spawn_timer = random.uniform(*TRAFFIC_SPAWN_RANGE)
 
-            if car_rect.left < ROAD_RECT.left or car_rect.right > ROAD_RECT.right:
+            car_rect = pygame.Rect(int(st.car_x), CAR_Y, CAR_W, CAR_H)
+            collided = car_rect.left < ROAD_RECT.left or car_rect.right > ROAD_RECT.right
+
+            for car in st.traffic:
+                car[1] += st.speed * dt
+                traffic_rect = pygame.Rect(int(car[0]), int(car[1]), TRAFFIC_W, TRAFFIC_H)
+                pygame.draw.rect(screen, config.WARNING, traffic_rect, border_radius=6)
+                if car_rect.colliderect(traffic_rect):
+                    collided = True
+            st.traffic[:] = [c for c in st.traffic if c[1] < HEIGHT + TRAFFIC_H]
+
+            if collided:
                 state = GAME_OVER
                 ui.update_highscore(GAME_KEY, int(st.score))
             else:

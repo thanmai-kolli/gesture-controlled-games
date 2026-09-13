@@ -9,12 +9,22 @@ Built with Python, OpenCV, MediaPipe, and Pygame. A single graphical hub lets yo
 |---|---|
 | ![Hub menu](screenshots/hub_menu.png) | ![Snake gameplay](screenshots/snake_game.png) |
 
+| Subway Runner | Car Racing |
+|---|---|
+| ![Subway Runner gameplay](screenshots/subway_runner.png) | ![Car Racing gameplay](screenshots/car_racing.png) |
+
 ## Features
 - Graphical hub — pick a game with the mouse, arrow keys, or hand gestures
 - Live camera preview and gesture indicator shown on every screen
 - Full keyboard fallback (arrow keys, space, down) if no webcam is available
+- Each game has its own difficulty progression and obstacle variety (see below)
 - Local high scores saved automatically per game
 - Pause, restart, and quit flows built into every game
+
+## Games
+- **Snake** — classic grid snake. Speed ramps up as your score grows, and rare golden food is worth 3 points instead of 1.
+- **Subway Runner** — dodge two kinds of obstacles: low blocks (jump with an open palm) and overhead bars (duck with a fist). Obstacle speed increases as your score climbs.
+- **Car Racing** — stay on the road while oncoming traffic spawns ahead of you. Accelerating with an open palm raises both your score rate and how fast traffic closes in.
 
 ## Quick Start
 Requires Python 3.10+.
@@ -27,14 +37,13 @@ python main.py
 A webcam is optional — the keyboard fallback is always active.
 
 ## Controls
-| Action                     | Gesture                    | Keyboard          |
-|-----------------------------|-----------------------------|--------------------|
-| Steer / move left            | Hand held left of center    | Left arrow         |
-| Steer / move right           | Hand held right of center   | Right arrow        |
-| Start / jump / accelerate     | Open palm                   | Up arrow or Space  |
-| Move down / go back          | Closed fist                 | Down arrow         |
-| Pause (Snake only)           | -                            | P                  |
-| Back to hub menu             | -                            | Esc                |
+| Action                                                               | Gesture                     | Keyboard          |
+|----------------------------------------------------------------------|------------------------------|--------------------|
+| Steer / change lane                                                  | Hand held left/right of center | Left / Right arrow |
+| Start · move up (Snake) · jump (Subway Runner) · accelerate (Car Racing) | Open palm                 | Up arrow or Space  |
+| Move down (Snake) · duck under bars (Subway Runner) · back at Game Over | Closed fist                | Down arrow         |
+| Pause (Snake only)                                                    | -                             | P                  |
+| Back to hub menu                                                      | -                             | Esc                |
 
 Holding a closed fist at the hub for one second quits the app; a progress bar shows the countdown so it's never accidental.
 
