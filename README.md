@@ -4,6 +4,11 @@ Play three classic arcade games using hand gestures captured from a webcam — n
 
 Built with Python, OpenCV, MediaPipe, and Pygame. A single graphical hub lets you pick between Snake, Subway Runner, and Car Racing.
 
+## Screenshots
+| Hub | Snake |
+|---|---|
+| ![Hub menu](screenshots/hub_menu.png) | ![Snake gameplay](screenshots/snake_game.png) |
+
 ## Features
 - Graphical hub — pick a game with the mouse, arrow keys, or hand gestures
 - Live camera preview and gesture indicator shown on every screen
